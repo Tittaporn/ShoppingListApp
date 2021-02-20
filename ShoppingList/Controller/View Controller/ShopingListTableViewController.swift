@@ -17,6 +17,7 @@ class ShopingListTableViewController: UITableViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        ShoppingListController.shared.loadFromPersistance()
         tableView.reloadData()
     }
     
@@ -42,83 +43,68 @@ class ShopingListTableViewController: UITableViewController {
     
     // MARK: - Table view data source
     override func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
+        return ShoppingListController.shared.sections.count
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        var numberOfRowForEachSection = 0
-        if section == 1 {
-            let purchasedLists = ShoppingListController.shared.lists
-            for list in purchasedLists {
-                if list.havePurchased == true {
-                numberOfRowForEachSection += 1
-                }
-            }
-        } else if section == 0 {
-            let notPurchasedLists = ShoppingListController.shared.lists
-            for list in notPurchasedLists {
-                if list.havePurchased == false {
-                numberOfRowForEachSection += 1
-                }
-            }
-        }
-        
-        print(numberOfRowForEachSection)
-        return numberOfRowForEachSection
+        return ShoppingListController.shared.sections[section].count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        // let cellTitle = mySectionsList[indexPath.section][indexPath.row]
-        
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "shoppingListCell", for: indexPath) as? ShoppingListTableViewCell else {return UITableViewCell()}
         
         
-        let lists = ShoppingListController.shared.lists
-        var trueLists: [ShoppingList] = []
-        var falseLists: [ShoppingList] = []
+        let list = ShoppingListController.shared.sections[indexPath.section][indexPath.row]
         
-        if indexPath.section == 1  {
-            for list in lists {
-                if list.havePurchased == true {
-                    trueLists.append(list)
-                }
-            }
-            let trueList = trueLists[indexPath.row]
-            //cell.updateViewCellWith(list: trueList)
-            cell.list = trueList
-        } else {
-            for list in lists {
-                if list.havePurchased == false {
-                    falseLists.append(list)
-                }
-            }
-            let  falseList =  falseLists[indexPath.row]
-            
-           // cell.updateViewCellWith(list: falseList)
-            cell.list = falseList
-            
-        }
-        
+        cell.list = list
         cell.delegate = self
         return cell
     }
     
-    func tableView(tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
-        let header = view as! UITableViewHeaderFooterView
-        header.textLabel?.font = UIFont(name: "FontName", size: 14)
-    }
-    
-//    override func sectionIndexTitles(for tableView: UITableView) -> [String]? {
-//        return ["Have not purchased items", "Have purchased items."]
-//    }
-    
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
-            let listToDelete = ShoppingListController.shared.lists[indexPath.row]
-            ShoppingListController.shared.deleteShoppingList(listToDelete: listToDelete)
-            tableView.deleteRows(at: [indexPath], with: .fade)
+            let listToDelete = ShoppingListController.shared.sections[indexPath.section][indexPath.row]
+            ShoppingListController.shared.deleteShoppingList(list: listToDelete)
+            tableView.reloadData()
         }
+    }
+    
+    
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        if section == 0 {
+            if ShoppingListController.shared.notPurchasedLists.count == 0 {
+                return CGFloat(0.0)
+            } else {
+                return CGFloat(50.0)
+            }
+        } else  {
+            if ShoppingListController.shared.purchasedLists.count == 0 {
+                return CGFloat(0.0)
+            } else {
+                return CGFloat(50.0)
+            }
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        if section == 0 {
+            if ShoppingListController.shared.notPurchasedLists.count == 0 {
+                return ""
+            }
+            return "NOT PURCHASED LISTS"
+        } else  {
+            if ShoppingListController.shared.purchasedLists.count == 0 {
+                return ""
+            }
+            return "PURCHASED LISTS"
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
+        view.tintColor = UIColor.yellow
+        let header = view as! UITableViewHeaderFooterView
+        header.textLabel?.textColor = UIColor.brown
+        header.textLabel?.font = UIFont(name: "Apple Color Emoji", size: 20)
     }
     
     // MARK: - Navigation
@@ -126,7 +112,7 @@ class ShopingListTableViewController: UITableViewController {
         if segue.identifier == "toShopingListDetailVC" {
             guard let indexPath = tableView.indexPathForSelectedRow,
                   let destination = segue.destination as? ShoppingListDetailViewController else {return}
-            let list = ShoppingListController.shared.lists[indexPath.row]
+            let list = ShoppingListController.shared.sections[indexPath.section][indexPath.row]
             destination.list = list
         }
     }
@@ -136,13 +122,9 @@ class ShopingListTableViewController: UITableViewController {
 extension ShopingListTableViewController: ShowTableViewCellDelegate {
     func buttonPurchasedTapped(sender: ShoppingListTableViewCell) {
         guard let indexPath = tableView.indexPath(for: sender) else {return}
-        let listToToggle = ShoppingListController.shared.lists[indexPath.row]
+        let listToToggle = ShoppingListController.shared.sections[indexPath.section][indexPath.row]
         ShoppingListController.shared.toggleHasPurchased(list: listToToggle)
         sender.updateViewCellWith(list: listToToggle)
+        tableView.reloadData()
     }
 }
-
-
-/*
- https://www.youtube.com/watch?v=zFMSovtqqUc
- */

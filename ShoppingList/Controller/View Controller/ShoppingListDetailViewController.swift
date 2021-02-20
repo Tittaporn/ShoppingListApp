@@ -23,6 +23,8 @@ class ShoppingListDetailViewController: UIViewController, UITextFieldDelegate {
         updateView()
         quantityTextField.delegate = self
         itemNameTextFiled.delegate = self
+        let tap = UITapGestureRecognizer(target: self.view, action: #selector(UIView.endEditing))
+        view.addGestureRecognizer(tap)
     }
     
     // MARK: - Actions
